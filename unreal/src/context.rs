@@ -292,6 +292,79 @@ impl Unreal4ContextPlatformProperties {
     }
 }
 
+/// EngineData context element.
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "with-serde", derive(Serialize))]
+pub struct Unreal4ContextEngineData {
+    /// RHI.RHIName
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rhi_rhi_name: Option<String>,
+    /// RHI.AdapterName
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rhi_adapter_name: Option<String>,
+    /// RHI.UserDriverVersion
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rhi_user_driver_version: Option<String>,
+    /// RHI.InternalDriverVersion
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rhi_internal_driver_version: Option<String>,
+    /// RHI.FeatureLevel
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rhi_feature_level: Option<String>,
+    /// BrickadiaVersionDecoration
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub brickadia_version_decoration: Option<String>,
+    /// BrickadiaVersionChangelist
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub brickadia_version_changelist: Option<String>,
+    /// BrickadiaVersionEngine
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub brickadia_version_engine: Option<String>,
+    /// LastKnownLocation
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub last_known_location: Option<String>,
+}
+
+impl Unreal4ContextEngineData {
+    fn from_xml(root: &Element) -> Option<Self> {
+        let list = root.find("EngineData")?;
+
+        let mut rv = Unreal4ContextEngineData::default();
+
+        fn get_text_or_none(elm: &Element) -> Option<String> {
+            let text = elm.text();
+            if text != "" {
+                Some(text.to_string())
+            } else {
+                None
+            }
+        }
+
+        for child in list.children() {
+            let tag = child.tag();
+
+            // We don't expect an XML with namespace here
+            if tag.ns().is_some() {
+                continue;
+            }
+            match tag.name() {
+                "RHI.RHIName" => rv.rhi_rhi_name = get_text_or_none(&child),
+                "RHI.AdapterName" => rv.rhi_adapter_name = get_text_or_none(&child),
+                "RHI.UserDriverVersion" => rv.rhi_user_driver_version = get_text_or_none(&child),
+                "RHI.InternalDriverVersion" => rv.rhi_internal_driver_version = get_text_or_none(&child),
+                "RHI.FeatureLevel" => rv.rhi_feature_level = get_text_or_none(&child),
+                "BrickadiaVersionDecoration" => rv.brickadia_version_decoration = get_text_or_none(&child),
+                "BrickadiaVersionChangelist" => rv.brickadia_version_changelist = get_text_or_none(&child),
+                "BrickadiaVersionEngine" => rv.brickadia_version_engine = get_text_or_none(&child),
+                "LastKnownLocation" => rv.last_known_location = get_text_or_none(&child),
+                _ => {}
+            }
+        }
+
+        Some(rv)
+    }
+}
+
 /// The context data found in the context xml file.
 ///
 /// [Source](https://github.com/EpicGames/UnrealEngine/blob/b70f31f6645d764bcb55829228918a6e3b571e0b/Engine/Source/Runtime/Core/Private/GenericPlatform/GenericPlatformCrashContext.cpp)
@@ -305,6 +378,10 @@ pub struct Unreal4Context {
     /// Platform specific properties.
     #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
     pub platform_properties: Option<Unreal4ContextPlatformProperties>,
+
+    /// EngineData context element.
+    #[cfg_attr(feature = "with-serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub engine_data: Option<Unreal4ContextEngineData>,
 }
 
 impl Unreal4Context {
@@ -314,6 +391,7 @@ impl Unreal4Context {
         Ok(Unreal4Context {
             runtime_properties: Unreal4ContextRuntimeProperties::from_xml(&root),
             platform_properties: Unreal4ContextPlatformProperties::from_xml(&root),
+            engine_data: Unreal4ContextEngineData::from_xml(&root),
         })
     }
 }
